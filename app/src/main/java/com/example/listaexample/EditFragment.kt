@@ -1,19 +1,20 @@
 package com.example.listaexample
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import com.example.listaexample.databinding.FragmentEditBinding
-import com.example.listaexample.databinding.FragmentMainBinding
 import com.example.listaexample.model.News
+import com.example.listaexample.utils.Utils
 import com.google.gson.Gson
 
 
 class EditFragment : Fragment() {
 
     private val binding by lazy { FragmentEditBinding.inflate(layoutInflater) }
+    private val mainActivity by lazy { (activity as MainActivity) }
     private var newSend: News? = null
     private var idNew = 0
 
@@ -26,7 +27,7 @@ class EditFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.save.setOnClickListener {
-            newSend?.let{
+            newSend?.let {
                 val new =
                     News(
                         it.id,
@@ -35,7 +36,13 @@ class EditFragment : Fragment() {
                         binding.author.text.toString(),
                         it.imgUrl
                     )
-                (activity as MainActivity).navigateToMain(new)
+                val bundle = Bundle()
+                bundle.putString(Utils.NEW, Gson().toJson(new))
+                requireActivity().supportFragmentManager.setFragmentResult(
+                    Utils.REQUEST_KEY,
+                    bundle
+                )
+                mainActivity.navigateToMain()
             }
         }
     }
@@ -68,18 +75,12 @@ class EditFragment : Fragment() {
         const val KEY_NEW = "key_new"
 
         @JvmStatic
-        fun newInstance(new: News): EditFragment {
-            val args = Bundle()
-            args.putString(KEY_NEW, Gson().toJson(new))
-            val fragment = EditFragment()
-            fragment.arguments = args
-            return fragment
+        fun newInstance(new: News? = null) = EditFragment().apply {
+            arguments = Bundle().apply {
+                putString(KEY_NEW, Gson().toJson(new))
+            }
         }
 
-        @JvmStatic
-        fun newInstance(): EditFragment {
-            return EditFragment()
-        }
     }
 
 

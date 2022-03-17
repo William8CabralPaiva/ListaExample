@@ -1,20 +1,20 @@
 package com.example.listaexample
 
-import android.content.Intent
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.example.listaexample.data.DataSource
-import com.example.listaexample.databinding.ActivityMainBinding
 import com.example.listaexample.databinding.FragmentMainBinding
 import com.example.listaexample.model.News
 import com.example.listaexample.utils.Adapter
+import com.example.listaexample.utils.Utils
 import com.google.gson.Gson
+
 
 class MainFragment : Fragment() {
 
@@ -25,10 +25,35 @@ class MainFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initRecycleView()
+        initClicks()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        requireActivity().supportFragmentManager.setFragmentResultListener(
+            Utils.REQUEST_KEY,
+            viewLifecycleOwner
+        ) { requestKey, result ->
+            if (result.containsKey(Utils.NEW)) {
+                val new = Gson().fromJson(
+                    result.getString(Utils.NEW),
+                    News::class.java
+                )
+                news.forEachIndexed { index, item ->
+                    if (item.id == new.id) {
+                        news[index] = new
+                    }
+                }
+                adapter.notifyItemChanged(new.id)
+            } else {
+                val new = Gson().fromJson(
+                    result.getString(Utils.SAVE),
+                    News::class.java
+                )
+                news.add(new)
+                adapter.notifyItemInserted(new.id)
+            }
+        }
     }
 
     override fun onCreateView(
@@ -52,9 +77,14 @@ class MainFragment : Fragment() {
         binding.recycleView.adapter = adapter
         gesture.attachToRecyclerView(binding.recycleView)
 
-        //binding.recycleView.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
         setupInformation()
-        adapter.submitList(news.toList())
+        adapter.submitList(news)
+    }
+
+    private fun initClicks() {
+        binding.floatingActionButton.setOnClickListener {
+            (activity as MainActivity).navigateToSave()
+        }
     }
 
     private fun setupInformation() {
@@ -98,6 +128,7 @@ class MainFragment : Fragment() {
     }
 
     companion object {
+        const val TAG = "MainFragment"
 
         @JvmStatic
         fun newInstance(new: News): MainFragment {
